@@ -1,0 +1,13 @@
+#!/ports/bin/perl
+
+use Modern::Perl;
+
+use lib qw( . );
+use Twitter::Filter::Collector;
+
+my $collector = Twitter::Filter::Collector->new( application => 'stalk' );
+my @stalked   = $collector->get_stalked_users();
+
+foreach my $user ( @stalked ) {
+    $collector->queue_user_timeline( $user );
+}

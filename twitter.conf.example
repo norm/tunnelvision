@@ -1,0 +1,11 @@
+# twitter access configuration
+
+[user cackhanded]
+password = PASSWORD_GOES_HERE
+
+[user pubstandards]
+password = PASSWORD_GOES_HERE
+
+[stalk]
+screen_name = towerbridge
+
