@@ -12,8 +12,8 @@ use Net::Twitter::Lite;
 use Storable  qw( freeze thaw );
 
 use constant TWEETS_PER_API_CALL     => 100;
-use constant SLEEP_BETWEEN_API_CALLS => 1;
-use constant MAX_API_ATTEMPTS        => 3;
+use constant SLEEP_BETWEEN_API_CALLS => 3;
+use constant MAX_API_ATTEMPTS        => 5;
 
 has application => ( isa => 'Str',     is => 'ro', required => 1 );
 has user        => ( isa => 'Str',     is => 'ro' );
@@ -72,20 +72,11 @@ sub DEMOLISH {
 }
 
 
-
-
+method get_searches {
+    return $self->get_config_as_array( 'search', 'term' );
+}
 method get_stalked_users {
-    my $stalking = $self->get_config( 'stalk', 'screen_name' );
-    my @stalking;
-    
-    if ( 'ARRAY' eq ref( $stalking ) ) {
-        push @stalking, @{ $stalking };
-    }
-    else {
-        push @stalking, $stalking;
-    }
-    
-    return @stalking;
+    return $self->get_config_as_array( 'stalk', 'screen_name' );
 }
 
 
@@ -124,6 +115,23 @@ method queue_user_timeline ( Str $user! ) {
     
     return $count;
 }
+method queue_search ( Str $term! ) {
+    my $most_recent = $self->get_state( $term ) // 1;
+    
+    my ( $count, $new_most_recent ) 
+        = $self->queue_from_search( 
+                {
+                    q        => $term,
+                    since_id => $most_recent,
+                }
+            );
+    
+    if ( $count ) {
+        $self->set_state( $term, $new_most_recent );
+    }
+    
+    return $count;
+}
 method queue_from_api_call ( Str $method!, HashRef $options! ) {
     my $twitter         = $self->get_twitter();
     my $latest_tweet    = $options->{'since_id'};
@@ -147,18 +155,20 @@ method queue_from_api_call ( Str $method!, HashRef $options! ) {
         if ( $@ ) {
             my $error = $@;     # is actually Net::Twitter::Lite::Error
             
-            say 'ERROR ' . $error->code;
-            
             # API sometimes returns near-empty HTML pages
             # instead of data ... most curious
             next FETCH if ( 200 == $error->code );
             
+            say 'ERROR ' . $error->code;
             say $error->message;
             say $error->twitter_error;
             use Data::Dumper;
             say Dumper $error->http_response;
             die q();
         }
+        
+        use Data::Dumper;
+        print Dumper $statuses;
         
         last FETCH if -1 == $#$statuses;
         
@@ -183,6 +193,70 @@ method queue_from_api_call ( Str $method!, HashRef $options! ) {
 
     return( $tweet_count, $latest_tweet );
 }
+method queue_from_search ( HashRef $options! ) {
+    my $twitter         = $self->get_twitter();
+    my $latest_tweet    = $options->{'since_id'};
+    my $page            = 1;
+    my $tweet_count     = 0;
+    my $failed_attempts = 0;
+    
+    FETCH:
+    while ( 1 ) {
+        $failed_attempts++;
+        last FETCH if $failed_attempts > MAX_API_ATTEMPTS;
+        
+        my $results;
+        $options->{'page'}  = $page;
+        $options->{'count'} = TWEETS_PER_API_CALL;
+        
+        eval {
+            $results = $twitter->search( $options );
+            sleep SLEEP_BETWEEN_API_CALLS;
+        };
+        if ( $@ ) {
+            my $error = $@;     # is actually Net::Twitter::Lite::Error
+            
+            say 'ERROR ' . $error->code;
+
+            # API sometimes returns near-empty HTML pages
+            # instead of data ... most curious
+            next FETCH if ( 200 == $error->code );
+            
+            say $error->message;
+            say $error->twitter_error;
+            use Data::Dumper;
+            say Dumper $error->http_response;
+            die q();
+        }
+        
+        # search API returns useful metadata
+        my $statuses         = $results->{'results'};
+        my $results_per_page = $results->{'results_per_page'};
+           $latest_tweet     = $results->{'max_id'};
+        
+        # no search results
+        last FETCH if -1 == $#$statuses;
+        
+        $failed_attempts = 0;
+        $page++;
+        
+        foreach my $status ( @{ $statuses } ) {
+            $tweet_count++;
+            
+            say '-> ' 
+              . $status->{'from_user'}
+              . ' [' . $status->{'id'} . '] '
+              . $status->{'text'};
+            
+            $self->queue_tweet( $status );
+        }
+        
+        # no more statuses to find
+        last FETCH if ( $#$statuses + 1 ) < $results_per_page;
+    }
+
+    return( $tweet_count, $latest_tweet );
+}
 method queue_tweet ( HashRef $tweet ) {
     my $string = freeze $tweet;
     my $queue  = $self->get_queue();
@@ -194,6 +268,20 @@ method queue_tweet ( HashRef $tweet ) {
 method get_config ( Str $section!, Str $key! ) {
     my $config = $self->{'_config'};
     return $config->{ $section }{ $key };
+}
+method get_config_as_array ( Str $section!, Str $key! ) {
+    my $config = $self->{'_config'};
+    my $result = $config->{ $section }{ $key };
+    my @results;
+    
+    if ( 'ARRAY' eq ref( $result ) ) {
+        push @results, @{ $result };
+    }
+    else {
+        push @results, $result;
+    }
+    
+    return @results;
 }
 method set_config ( Str $section!, Str $key!, $value! ) {
     my $config = $self->{'_config'};
