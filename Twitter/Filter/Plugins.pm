@@ -33,7 +33,7 @@ method build_plugins ( Str :$dir!, Str :$method!, Str :$class! ) {
             push @working_plugins, $plugin;
 
             if ( $plugin->can( 'initialise' ) ) {
-                $plugin->initialise();
+                $plugin->initialise( $self );
             }
         }
         else {
