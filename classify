@@ -1,0 +1,59 @@
+#!/ports/bin/perl
+
+use Modern::Perl;
+
+use Getopt::Std;
+
+use lib qw( . );
+use Twitter::Filter::Classifier;
+
+
+
+my $classifier = Twitter::Filter::Classifier->new();
+my $timestamp  = 0;
+my $bayes;
+my %opt;
+# s: single tweet only; 
+# n: do not queue, just report
+# v: report classification
+getopts( 'snv', \%opt );     
+
+while ( 1 ) {
+    my $tweet = $classifier->get_next_tweet();
+    
+    my ( $score, $tags, $buckets ) 
+        = $classifier->classify_tweet( $tweet );
+    my %item = (
+            tweet   => $tweet,
+            score   => $score,
+            tags    => $tags,
+            buckets => $buckets,
+        ); 
+    
+    report_tweet( %item )  if $opt{'v'};
+    
+    if ( $opt{'n'} ) {
+        $classifier->cancel_processing();
+    }
+    else {
+        $classifier->queue_tweet( \%item );
+        $classifier->finished_processing();
+    }
+    
+    last if $opt{'s'};
+}
+exit;
+
+
+
+sub report_tweet {
+    my %item = @_;
+    
+    say sprintf 
+            '%s: %s',
+                $item{'tweet'}{'user'}{'screen_name'},
+                $item{'tweet'}{'text'};
+    say "score:   $item{'score'}";
+    say 'tags:    ' . join( ' ', @{ $item{'tags'} } );
+    say 'buckets: ' . join( ' ', @{ $item{'buckets'} } );
+}

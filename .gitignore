@@ -1,1 +1,4 @@
-twitter.conf
+conf/twilter
+conf/groups
+queues/
+state/
