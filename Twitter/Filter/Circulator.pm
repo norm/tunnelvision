@@ -60,22 +60,20 @@ method get_next_tweet {
     
     return thaw( $contents );
 }
-method circulate_tweet ( HashRef $tweet! ) {
+method circulate_tweet ( HashRef $item! ) {
     my $any_blocked = 0;
-    
-    say $tweet->{'tweet'}{'text'};
     
     CIRCULATOR:
     foreach my $circulator ( @{ $self->get_circulators() } ) {
-        next CIRCULATOR if defined $tweet->{'circulated'}{ $circulator };
+        next CIRCULATOR if defined $item->{'circulated'}{ $circulator };
         
-        my $blocked = $circulator->circulate( $self, $tweet );
+        my $blocked = $circulator->circulate( $self, $item );
         
         if ( $blocked ) {
             $any_blocked = 1;
         }
         else {
-            $tweet->{'circulated'}{ $circulator } = 1;
+            $item->{'circulated'}{ $circulator } = 1;
         }
     }
     
@@ -89,13 +87,11 @@ method finished_processing {
 method requeue_tweet ( HashRef $tweet! ){
     my $string = freeze $tweet;
     my $queue  = $self->get_queue();
-    my $job    = $self->get_current_job();
     
     # Rather than "return to queue", remove the queue item and
     # requeue to allow other tweets to flush through the queue if 
     # the problem was specific to this tweet. It also means we store
     # the details of what has and hasn't been processed already.
-    $job->finish();
     $queue->enqueue_string( $string );
 }
 

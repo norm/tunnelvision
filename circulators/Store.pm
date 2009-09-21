@@ -11,9 +11,11 @@ my $database = Twitter::Filter::Database->new();
 sub circulate {
     my $self       = shift;
     my $circulator = shift;
-    my $tweet      = shift;
+    my $item       = shift;
     
-    $database->store_tweet( $tweet );
+    $database->store_tweet( $item );
+    
+    return;
 }
 
 1;
