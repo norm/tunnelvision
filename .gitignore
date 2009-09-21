@@ -1,4 +1,5 @@
 conf/twilter
 conf/groups
+conf/circulator_prowl
 queues/
 state/
