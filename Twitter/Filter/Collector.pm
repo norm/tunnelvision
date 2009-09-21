@@ -183,6 +183,13 @@ method queue_from_api_call ( Str $method!, HashRef $options! ) {
                 $latest_tweet = $status->{'id'};
             }
             
+            # flag direct messages and then fix their 'who it is 
+            # from' structure, which is unhelpfully different
+            if ( defined $status->{'recipient'} ) {
+                $status->{'direct_message'} = 1;
+                $status->{'user'}           = $status->{'sender'};
+            }
+            
             say '-> ' 
               . $status->{'user'}{'screen_name'}
               . ' [' . $status->{'id'} . '] '
@@ -200,6 +207,9 @@ method enqueue_tweet_by_id ( Str $id ) {
     $self->enqueue_tweet( $twitter->show_status( $id ) );
 }
 method enqueue_tweet ( HashRef $tweet ) {
+    $tweet->{'user_account'} = $self->get_user() 
+                            // 'anonymous';
+    
     my $string = freeze $tweet;
     my $queue  = $self->get_queue();
     
