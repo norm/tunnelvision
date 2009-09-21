@@ -1,0 +1,16 @@
+#!/ports/bin/perl
+
+use Modern::Perl;
+
+use lib qw( . );
+use Twitter::Filter::Collector;
+
+my $user = shift
+    or die "Usage: mentions <user>";
+             
+my $collector = Twitter::Filter::Collector->new( 
+        application => 'mentions',
+        user        => $user
+    );
+
+$collector->queue_mentions();

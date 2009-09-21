@@ -86,6 +86,21 @@ method queue_home_timeline {
     
     return $count;
 }
+method queue_mentions {
+    my $most_recent = $self->get_state( 'most_recent' ) // 1;
+    
+    my ( $count, $new_most_recent ) 
+        = $self->queue_from_api_call(
+                'mentions',
+                {
+                    since_id => $most_recent,
+                }
+            );
+    
+    if ( $count ) {
+        $self->set_state( 'most_recent', $new_most_recent );
+    }
+}
 method queue_direct_messages {
     my $most_recent = $self->get_state( 'most_recent' ) // 1;
     
