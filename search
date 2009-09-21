@@ -9,5 +9,5 @@ my $collector = Twitter::Filter::Collector->new( application => 'search' );
 my @searches  = $collector->get_searches();
 
 foreach my $search_term ( @searches ) {
-    $collector->queue_search( $search_term );
+    $collector->queue_from_search( $search_term );
 }

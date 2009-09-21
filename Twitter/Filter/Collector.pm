@@ -86,6 +86,21 @@ method queue_home_timeline {
     
     return $count;
 }
+method queue_direct_messages {
+    my $most_recent = $self->get_state( 'most_recent' ) // 1;
+    
+    my ( $count, $new_most_recent ) 
+        = $self->queue_from_api_call(
+                'direct_messages',
+                {
+                    since_id => $most_recent,
+                }
+            );
+    
+    if ( $count ) {
+        $self->set_state( 'most_recent', $new_most_recent );
+    }
+}
 method queue_user_timeline ( Str $user! ) {
     my $most_recent = $self->get_state( $user ) // 1;
     
@@ -104,6 +119,23 @@ method queue_user_timeline ( Str $user! ) {
     
     return $count;
 }
+method queue_from_search ( Str $search_term! ) {
+    my $most_recent = $self->get_state( $search_term ) // 1;
+    
+    my $twitter = $self->get_twitter();
+    
+    my $results = $twitter->search( { 
+            q        => $search_term,
+            since_id => $most_recent,
+        } );
+    
+    foreach my $result ( @{ $results->{'results'} } ) {
+        my $id = $result->{'id'};
+        $self->enqueue_tweet_by_id( $id );
+    }
+}
+
+
 method queue_from_api_call ( Str $method!, HashRef $options! ) {
     my $twitter         = $self->get_twitter();
     my $latest_tweet    = $options->{'since_id'};
@@ -156,13 +188,18 @@ method queue_from_api_call ( Str $method!, HashRef $options! ) {
               . ' [' . $status->{'id'} . '] '
               . $status->{'text'};
             
-            $self->queue_tweet( $status );
+            $self->enqueue_tweet( $status );
         } 
     }
 
     return( $tweet_count, $latest_tweet );
 }
-method queue_tweet ( HashRef $tweet ) {
+method enqueue_tweet_by_id ( Str $id ) {
+    my $twitter = $self->get_twitter();
+    
+    $self->enqueue_tweet( $twitter->show_status( $id ) );
+}
+method enqueue_tweet ( HashRef $tweet ) {
     my $string = freeze $tweet;
     my $queue  = $self->get_queue();
     
