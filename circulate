@@ -1,0 +1,23 @@
+#!/ports/bin/perl
+
+use Modern::Perl;
+
+use Getopt::Std;
+
+use lib qw( . );
+use Twitter::Filter::Circulator;
+
+my $circulator = Twitter::Filter::Circulator->new();
+
+
+
+while ( 1 ) {
+    my $tweet   = $circulator->get_next_tweet();
+    my $blocked = $circulator->circulate_tweet( $tweet );
+    
+    $circulator->finished_processing();
+    if ( $blocked ) {
+        $circulator->requeue_tweet( $tweet );
+    }
+}
+exit;
