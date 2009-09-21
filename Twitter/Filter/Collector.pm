@@ -5,15 +5,17 @@ use MooseX::FollowPBP;
 use Moose;
 use MooseX::Method::Signatures;
 
-use Config::Std;
+with 'Twitter::Filter::State';
+with 'Twitter::Filter::Config';
+
 use IO::All  -utf8;
 use IPC::DirQueue;
 use Net::Twitter::Lite;
-use Storable  qw( freeze thaw );
+use Storable  qw( freeze );
 
 use constant TWEETS_PER_API_CALL     => 100;
 use constant SLEEP_BETWEEN_API_CALLS => 1;
-use constant MAX_API_ATTEMPTS        => 3;
+use constant MAX_API_ATTEMPTS        => 5;
 
 has application => ( isa => 'Str',     is => 'ro', required => 1 );
 has user        => ( isa => 'Str',     is => 'ro' );
@@ -28,31 +30,20 @@ has queue       => (
     );
 
 method build_queue {
-    return IPC::DirQueue->new( { dir => 'collected' } );
+    return IPC::DirQueue->new( { dir => 'queues/collected' } );
 }
-sub BUILD {
-    my $self = shift;
-    
-    # get global configuration object
-    read_config 'twitter.conf' => my %config;
-    $self->{'_config'} = \%config;
-    
+method BUILD {
+    $self->{'_config'} = $self->read_global_config();
     
     # get state object
     my $application = $self->get_application();
     my $user        = $self->get_user() // 'generic';
-    my $state_file = sprintf 
-                         'state/%s.%s',
+    my $state_file  = sprintf 
+                         '%s.%s',
                              $application, 
                              $user;
     
-    if ( ! -f $state_file ) {
-        my $default_state = '# autocreated at ' . scalar( gmtime ) . "\n";
-        $default_state > io( $state_file );
-    }
-    
-    read_config $state_file => my %state;
-    $self->{'_state'} = \%state;
+    $self->{'_state'} = $self->read_state( $state_file );
     
     # create twitter object
     my %options;
@@ -64,28 +55,17 @@ sub BUILD {
     my $twitter = Net::Twitter::Lite->new( %options );
     $self->set_twitter( $twitter );
 }
-sub DEMOLISH {
-    my $self = shift;
-    
-    # save the configuration object
-    write_config %{ $self->{'_state'} };
+method DEMOLISH {
+    $self->save_state();
 }
 
 
 
-
+method get_searches {
+    return $self->get_config_as_array( 'search', 'term' );
+}
 method get_stalked_users {
-    my $stalking = $self->get_config( 'stalk', 'screen_name' );
-    my @stalking;
-    
-    if ( 'ARRAY' eq ref( $stalking ) ) {
-        push @stalking, @{ $stalking };
-    }
-    else {
-        push @stalking, $stalking;
-    }
-    
-    return @stalking;
+    return $self->get_config_as_array( 'stalk', 'screen_name' );
 }
 
 
@@ -147,12 +127,11 @@ method queue_from_api_call ( Str $method!, HashRef $options! ) {
         if ( $@ ) {
             my $error = $@;     # is actually Net::Twitter::Lite::Error
             
-            say 'ERROR ' . $error->code;
-            
             # API sometimes returns near-empty HTML pages
             # instead of data ... most curious
             next FETCH if ( 200 == $error->code );
             
+            say 'ERROR ' . $error->code;
             say $error->message;
             say $error->twitter_error;
             use Data::Dumper;
@@ -191,20 +170,11 @@ method queue_tweet ( HashRef $tweet ) {
 }
 
 
-method get_config ( Str $section!, Str $key! ) {
-    my $config = $self->{'_config'};
-    return $config->{ $section }{ $key };
-}
-method set_config ( Str $section!, Str $key!, $value! ) {
-    my $config = $self->{'_config'};
-    $config->{ $section }{ $key } = $value;
-}
 method get_state  ( Str $key! ) {
     return $self->{'_state'}{''}{ $key };
 }
 method set_state  ( Str $key!, $value! ) {
     $self->{'_state'}{''}{ $key } = $value;
 }
-
 
 1;
