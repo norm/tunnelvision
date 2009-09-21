@@ -9,3 +9,8 @@ password = PASSWORD_GOES_HERE
 [stalk]
 screen_name = towerbridge
 
+[search]
+term = devfort
+term = dev/fort
+term = pub standards
+term = pubstandards
