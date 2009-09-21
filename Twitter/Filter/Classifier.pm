@@ -7,6 +7,7 @@ use MooseX::Method::Signatures;
 
 with 'Twitter::Filter::State';
 with 'Twitter::Filter::Config';
+with 'Twitter::Filter::Plugins';
 
 use constant PLUGIN_CLASS        => 'Twitter::Filter::Classifier';
 use constant QUEUE_TIMEOUT       => 0;      # 0 means "wait indefinitely"
@@ -60,39 +61,13 @@ method build_out_queue {
     return IPC::DirQueue->new( { dir => 'queues/classified' } );
 }
 method build_classifiers {
-    my ( @plugins, @classifiers );
+    my $plugins = $self->build_plugins( 
+            dir    => 'classifiers',
+            method => 'classify',
+            class  => 'Twitter::Filter::Classifier',
+        );
     
-    # find plugins in @INC
-    foreach my $plugin ( $self->plugins() ) {
-        push @plugins, $plugin;
-    }
-    
-    # find plugins in the 'classifiers' directory
-    foreach my $file ( glob 'classifiers/*.pm' ) {
-        require $file;
-        
-        $file =~ s{^ classifiers/ (.*) \.pm $}{$1}x;
-        my $plugin = sprintf 
-                         "%s::%s",
-                             PLUGIN_CLASS,
-                             $file;
-        push @plugins, $plugin;
-    }
-    
-    foreach my $plugin ( @plugins ) {
-        if ( $plugin->can( 'classify' ) ) {
-            push @classifiers, $plugin;
-            
-            if ( $plugin->can( 'initialise' ) ) {
-                $plugin->initialise();
-            }
-        }
-        else {
-            say STDERR "** $plugin: cannot classify";
-        }
-    }
-    
-    return \@classifiers;
+    return $plugins;
 }
 
 
