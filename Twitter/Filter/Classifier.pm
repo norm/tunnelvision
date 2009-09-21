@@ -30,6 +30,7 @@ use Module::Pluggable   require     => 1,
 use Storable            qw( freeze thaw );
 
 has state_timestamp => ( isa => 'Int', is => 'rw' );
+has _config         => ( isa => 'HashRef', is => 'rw' );
 has classifiers     => (
         isa     => 'ArrayRef',
         is      => 'ro',
@@ -68,6 +69,9 @@ method build_classifiers {
         );
     
     return $plugins;
+}
+method BUILD {
+    $self->{'_config'} = $self->read_global_config();
 }
 
 
@@ -116,17 +120,17 @@ method tweet_token_list ( HashRef $tweet ) {
         $tokens{ $word }++;
         
         # weight the words with the person who said them
-        my $user_word = "%${user}%${word}";
+        my $user_word = "${user}%${word}";
         $tokens{ $user_word }++;
         
         # add metadata about special words
         if ( $word =~ WORD_IS_MENTION ) {
             $tokens{'attr:mention'}++;
-            $tokens{"mention%$1"}++;
+            $tokens{"mention:$1"}++;
         }
         if ( $word =~ WORD_IS_HASHTAG ) {
             $tokens{'attr:hashtag'}++;
-            $tokens{"hashtag%$1"}++;
+            $tokens{"hashtag:$1"}++;
         }
     }
     
