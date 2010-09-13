@@ -1,0 +1,39 @@
+#!/usr/bin/env perl
+
+use Modern::Perl;
+
+use lib qw( . );
+use Twitter::Filter;
+
+
+
+my $user = shift
+    or die "Usage: get_oauth_tokens <user>";
+
+my $filter = Twitter::Filter->new(
+        user => $user,
+    );
+
+
+
+if ( ! $filter->has_authorisation ) {
+    say 'You must first authorise this app with Twitter, here:';
+    say $filter->get_auth_url();
+    
+    say "\nOnce done, enter the PIN given by Twitter:";
+    my $pin = <STDIN>;
+    chomp $pin;
+    
+    my( $token, $secret, $t_user, $t_screen )
+        = $filter->get_access_tokens( $pin );
+    
+    die "Twitter authorisation '${t_screen}' does not match '${user}'.\n"
+        unless $t_screen eq $user;
+
+    $filter->set_config( "user $user", 'token', $token );
+    $filter->set_config( "user $user", 'token_secret', $secret );
+    say "Saved authorisation for ${user}.";
+}
+else {
+    say "${user} is already authorised.";
+}

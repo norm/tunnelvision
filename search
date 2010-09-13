@@ -1,13 +1,32 @@
-#!/ports/bin/perl
+#!/usr/bin/env perl
 
 use Modern::Perl;
 
 use lib qw( . );
-use Twitter::Filter::Collector;
+use Twitter::Filter;
 
-my $collector = Twitter::Filter::Collector->new( application => 'search' );
-my @searches  = $collector->get_searches();
 
-foreach my $search_term ( @searches ) {
-    $collector->queue_from_search( $search_term );
+my $filter  = Twitter::Filter->new();
+my $twitter = $filter->get_twitter();
+my $results = $twitter->saved_searches();
+
+SEARCH:
+foreach my $search ( @$results ) {
+    my $term    = $search->{'query'};
+    my $results = $twitter->search( $term );
+    
+    RESULT:
+    foreach my $result ( @{ $results->{'results'} } ) {
+        my $user = $result->{'from_user'};
+        my $text = $result->{'text'};
+        my $id   = $result->{'id'};
+        
+        $filter->fetch_tweet(
+                $id,
+                {
+                    'origin'     => 'search',
+                    'classified' => 0,
+                }
+            );
+    }
 }

@@ -21,11 +21,11 @@ method read_config_file ( Str $config_file! ) {
     return \%config;
 }
 method read_global_config {
-    return $self->read_config_file( 'conf/twilter' );
+    return $self->read_config_file( 'conf/tunnelvision' );
 }
 
 
-method get_config ( Str $section!, Str $key! ) {
+method get_config ( Str $key!, Str $section = '' ) {
     my $config = $self->{'_config'};
     return $config->{ $section }{ $key };
 }
@@ -50,18 +50,27 @@ method set_config ( Str $section!, Str $key!, $value! ) {
 
 
 method get_plugin_config_file {
-    my $caller = caller();
+    my $caller = caller(1);
     
-    # TODO - fix hardcoding
-    $caller =~ s{^ Twitter::Filter:: }{}x;
+    $caller =~ s{^ Twitter::Filter:: (Plugin::)? }{}x;
     $caller =~ s{::}{_};
     $caller =~ tr{A-Z}{a-z};
     
-    return "state/$caller";
+    return "conf/$caller";
 }
 method get_plugin_config {
     my $file = $self->get_plugin_config_file();
+    
+    # create the file if necessary
+    if ( ! -f $file ) {
+        my $handle = FileHandle->new( $file, 'w' );
+    }
+    
     return $self->read_config_file( $file );
+}
+
+method save_config {
+    write_config %{ $self->{'_config'} };
 }
 
 1;

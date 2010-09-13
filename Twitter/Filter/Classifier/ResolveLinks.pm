@@ -1,8 +1,7 @@
 package Twitter::Filter::Classifier::ResolveLinks;
+use base qw( Twitter::Filter::Classifier );
 
 use Modern::Perl;
-
-use Data::Dumper;
 use LWP::UserAgent;
 use URI::Find;
 
@@ -11,12 +10,12 @@ my $ua = LWP::UserAgent->new( max_redirect => 5 );
 
 
 sub classify {
-    my $self       = shift;
-    my $classifier = shift;
-    my $tweet      = shift;
-    my $tokens     = shift;
-    
+    my $class  = shift;
+    my $filter = shift;
+    my $tweet  = shift;
+    my $tokens = shift;
     my @tags;
+    
     my $finder = URI::Find->new(
             sub {
                 my $object = shift;

@@ -1,59 +1,46 @@
-#!/ports/bin/perl
+#!/usr/bin/env perl
 
 use Modern::Perl;
-
 use Getopt::Std;
 
 use lib qw( . );
-use Twitter::Filter::Classifier;
+use Twitter::Filter;
+
+use constant INCLUDE_META => 'meta';
+
+binmode STDOUT, ":utf8";
 
 
 
-my $classifier = Twitter::Filter::Classifier->new();
-my $timestamp  = 0;
-my $bayes;
+my $filter = Twitter::Filter->new();
+
+# -s single item
+# -n do not save (just see what'd happen)
 my %opt;
-# s: single tweet only; 
-# n: do not queue, just report
-# v: report classification
-getopts( 'snv', \%opt );     
+getopts( 'sn', \%opt );
 
+TWEET:
 while ( 1 ) {
-    my $tweet = $classifier->get_next_tweet();
+    my $id    = $filter->get_next_unclassified_tweet();
+    my $tweet = $filter->load_tweet( $id );
+    my %tweet = %$tweet;
     
-    my ( $score, $tags, $buckets ) 
-        = $classifier->classify_tweet( $tweet );
-    my %item = (
-            tweet   => $tweet,
-            score   => $score,
-            tags    => $tags,
-            buckets => $buckets,
-        ); 
+    my ( $score, $tags, $buckets ) = $filter->classify_tweet( \%tweet );
+    $tweet{'score'}      = $score;
+    $tweet{'tags'}       = $tags;
+    $tweet{'buckets'}    = $buckets;
+    $tweet{'classified'} = 1;
     
-    report_tweet( %item )  if $opt{'v'};
-    
-    if ( $opt{'n'} ) {
-        $classifier->cancel_processing();
-    }
-    else {
-        $classifier->queue_tweet( \%item );
-        $classifier->finished_processing();
+    foreach my $circulator ( @{ $filter->get_circulators() } ) {
+        $circulator->circulate( $filter, \%tweet );
     }
     
-    last if $opt{'s'};
+    print $filter->tweet_as_text( \%tweet, INCLUDE_META );
+    
+    $filter->update_document( $id, \%tweet )
+        unless $opt{'n'};
+    
+    last TWEET if $opt{'s'};
 }
 exit;
 
-
-
-sub report_tweet {
-    my %item = @_;
-    
-    say sprintf 
-            '%s: %s',
-                $item{'tweet'}{'user'}{'screen_name'},
-                $item{'tweet'}{'text'};
-    say "score:   $item{'score'}";
-    say 'tags:    ' . join( ' ', @{ $item{'tags'} } );
-    say 'buckets: ' . join( ' ', @{ $item{'buckets'} } );
-}

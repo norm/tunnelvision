@@ -1,0 +1,88 @@
+#!/usr/bin/env perl
+
+use Modern::Perl;
+use AnyEvent::Twitter::Stream;
+
+use lib qw( . );
+use Twitter::Filter;
+
+binmode STDOUT, ":utf8";
+$| = 1;
+
+
+
+my $user = shift
+    or die "Usage: userstream <user>";
+
+my $filter = Twitter::Filter->new(
+        mode        => 'collect',
+        application => 'userstream',
+        user        => $user,
+    );
+    
+    
+
+my $done     = AE::cv;
+my $streamer = AnyEvent::Twitter::Stream->new(
+    consumer_key    => $filter->get_config( 'consumer_key' ),
+    consumer_secret => $filter->get_config( 'consumer_secret' ),
+    token           => $filter->get_config( 'token',        "user $user" ),
+    token_secret    => $filter->get_config( 'token_secret', "user $user" ),
+    method          => 'userstream',
+    
+    on_tweet   => \&receive_tweet,
+    on_friends => \&receive_friends_list,
+    on_event   => \&receive_event,
+    on_error   => \&receive_error,
+    on_eof     => \&receive_eof,
+);
+$done->recv;
+exit;
+
+
+
+sub receive_tweet {
+    my $tweet = shift;
+    
+    # protect against rogue events
+    if ( defined $tweet->{'delete'}{'status'} ) {
+        say "\n-> SOMEONE DELETED A TWEET";
+        use Data::Dumper::Concise;
+        print Dumper \$tweet;
+        return;
+    }
+    
+    print ".";
+    # use Data::Dumper::Concise;
+    # print Dumper $tweet;
+    
+    # print $filter->tweet_as_text( $tweet );
+    
+    $filter->save_tweet( $tweet );
+}
+sub receive_friends_list {
+    my $list = shift;
+    say "\n-> GOT FRIENDS LIST";
+}
+sub receive_event {
+    my $event = shift;
+    say "\n-> GOT SOME OTHER EVENT";
+    
+    if ( $event->{'event'} eq 'favorite' ) {
+        ## TODO -- deal with favouriting events
+        say "-> SOMEONE FAVOURITED A TWEET";
+    }
+    else {
+        use Data::Dumper::Concise;
+        print Dumper $event;
+    }
+}
+sub receive_error {
+    my $error = shift;
+    warn "\nERROR: $error";
+    $done->send;
+}
+sub receive_eof {
+    $done->send;
+    say "\n-> EOF";
+}

@@ -1,0 +1,168 @@
+#!/usr/bin/env perl
+
+use Modern::Perl;
+use Email::Stuff;
+
+use lib qw( . );
+use Twitter::Filter;
+
+use constant INCLUDE_META     => 'meta';
+use constant ROWS_PER_REQUEST => 50;
+
+binmode STDOUT, ":utf8";
+
+
+my $type   = shift // 'score';
+my $option = shift // '50';
+
+my $filter = Twitter::Filter->new();
+my $more   = 1;
+my $count  = 0;
+my $results;
+my $text;
+my $html;
+
+MORE:
+while ( $more ) {
+    ( $results, $more ) = $filter->get_standard_view( $type, $option );
+    
+    $count += $results->{'count'};
+    
+    TWEET:
+    while ( my $id = $results->next() ) {
+        my $tweet = $filter->load_tweet( $id );
+        my %tweet = %$tweet;
+        
+        $text .= $filter->tweet_as_text( \%tweet, INCLUDE_META );
+        $html .= $filter->tweet_as_html( \%tweet, INCLUDE_META );
+        
+        $filter->add_to_document( $id, { seen => 1 } );
+    }
+}
+
+if ( $count ) {
+    $html = <<HTML;
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+  body {
+      font-family: Helvetica,sans-serif;
+      background: #fff;
+      padding: 0;
+      margin: 0;
+      font-size: 18px;
+      width: 360px;
+  }
+  ul,li {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+  }
+  li {
+      border-bottom: 1px solid #999;
+      color: #444;
+      padding-left: 50px;
+      line-height: 1.5;
+  }
+  li div {
+      padding-bottom: 5px;
+  }
+  li span.screen {
+      color: #999;
+      font-size: 80%;
+  }
+  li a {
+      font-weight: bold;
+      font-family: Georgia,Times,serif;
+      display: block;
+      text-decoration: none;
+      color: #000;
+  }
+  li span.when {
+      color: #98b;
+      font-family: Georgia,Times,serif;
+      font-size: 50%;
+      float: right;
+      padding-top: 2px;
+      white-space: nowrap;
+  }
+  li img {
+      float: left;
+      margin-left: -50px;
+      margin-top: 4px;
+      border: 1px solid transparent;
+      -webkit-border-radius: 8px;
+      width: 40px;
+      height: 40px;
+  }
+  li li {
+      background: transparent;
+      padding-left: 0;
+      font-size: 80%;
+      border-bottom: 1px dotted #fff;
+      min-height: 29px;
+      color: #666;
+  }
+  li li a {
+      color: #666;
+  }
+  li li:last-child {
+      border: none;
+  }
+  li li div {
+      min-height: 29px;
+  }
+  li li span.when {
+      font-size: 80%;
+  }
+  li li img {
+      width: 20px;
+      height: 20px;
+      margin-left: -32px;
+  }
+  </style>
+</head>
+<body>
+<ul>
+${html}
+</ul>
+</body>
+</html>
+HTML
+    
+    # my @parts = ( 
+    #         Email::MIME->create(
+    #             attributes => {
+    #                 content_type => 'text/plain',
+    #                 disposition  => 'attachment',
+    #                 charset      => 'utf8',
+    #             }
+    #             body => $text,
+    #         ),
+    #         Email::MIME->create(
+    #             attributes => {
+    #                 content_type => 'text/html',
+    #                 disposition  => 'attachment',
+    #                 charset      => 'utf8',
+    #             }
+    #             body => $html,
+    #         ),
+    #     );
+    # my $email = Email::MIME->create(
+    #     header => [ 
+    #         From => '"Twitter Summary" <twitter@cackhanded.net>',
+    #         To   => 'norm@cackhanded.net',
+    #     ],
+    #     parts  => [ @parts ],
+    # );
+    # 
+    # exit;
+    
+    Email::Stuff->to('norm@cackhanded.net')
+                ->from('"Twitter Summary" <twitter@cackhanded.net>')
+                ->subject("Summary of $type $option")
+                ->text_body($text)
+                ->html_body($html)
+                ->send;
+}

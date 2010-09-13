@@ -1,0 +1,29 @@
+collectors:
+	userstream:
+		- honour deleted tweet events
+		- do something with favourited tweet events
+classifiers:
+	- mark as seen:
+		- retweets already seen from someone else
+		- links to the same URL as one in a previous tweet already seen
+circulators:
+	mail summaries:
+		- better, template driven, HTML formatting
+	viewer:
+		- write one (!)
+		- option to snooze user for a period of hours/days
+		- option to filter out tweets by keyword
+			- permanently
+			- for a period of hours/days
+		- create groups and assign users to groups
+bayesian filtering:
+	- need a way to put a tweet into a bucket, and train the classifier
+	- determine useful training threshold before autoclassification will be of any use
+general:
+	- pass configuration to plugins automatically, either from a named section of the global configuration or as another file with the same name as the plugin (normalised to lowercase)
+refactoring:
+	- update_user_document should use update_if_changed
+	making it installable:
+		- read from a user-homedir based config file (optionally using TUNNELVISION_CONF or something)
+		- rename scripts?
+		- state stored in /tmp (?)
