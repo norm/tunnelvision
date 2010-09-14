@@ -261,7 +261,7 @@ method tweet_as_html ( HashRef $tweet, $meta = '', $include_replies=1 ) {
     
     my $text        = $tweet->{'text'};
     my $timestamp   = $tweet->{'created'} // 0;
-    my $time        = strftime '%m %b %R', localtime( $timestamp );
+    my $time        = strftime '%d %b %R', localtime( $timestamp );
     my $reply_chain = '';
     
     if ( $include_replies ) {
