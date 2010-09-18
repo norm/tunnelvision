@@ -14,29 +14,43 @@ $| = 1;
 my $user = shift
     or die "Usage: userstream <user>";
 
-my $filter = Twitter::Filter->new(
+my $last_attempt = 0;
+my $filter       = Twitter::Filter->new(
         mode        => 'collect',
         application => 'userstream',
         user        => $user,
     );
-    
-    
+my $done;
 
-my $done     = AE::cv;
-my $streamer = AnyEvent::Twitter::Stream->new(
-    consumer_key    => $filter->get_config( 'consumer_key' ),
-    consumer_secret => $filter->get_config( 'consumer_secret' ),
-    token           => $filter->get_config( 'token',        "user $user" ),
-    token_secret    => $filter->get_config( 'token_secret', "user $user" ),
-    method          => 'userstream',
+
+
+# only allow reconnections where they have been long-lived (or at start)
+# this will hopefully avoid spamming twitter until the connection code
+# is decently written
+while ( $last_attempt + 10 < time() ) {
+    my $last_attempt = time();
+    say "-> RESTARTING CONNECTION TO TWITTER";
     
-    on_tweet   => \&receive_tweet,
-    on_friends => \&receive_friends_list,
-    on_event   => \&receive_event,
-    on_error   => \&receive_error,
-    on_eof     => \&receive_eof,
-);
-$done->recv;
+       $done         = AE::cv;
+    my $streamer     = AnyEvent::Twitter::Stream->new(
+        consumer_key    => $filter->get_config( 'consumer_key' ),
+        consumer_secret => $filter->get_config( 'consumer_secret' ),
+        method          => 'userstream',
+        token           
+            => $filter->get_config( 'token',        "user $user" ),
+        token_secret    
+            => $filter->get_config( 'token_secret', "user $user" ),
+        
+        on_tweet   => \&receive_tweet,
+        on_friends => \&receive_friends_list,
+        on_event   => \&receive_event,
+        on_error   => \&receive_error,
+        on_eof     => \&receive_eof,
+    );
+
+    $done->recv;
+    say '';
+}
 exit;
 
 
