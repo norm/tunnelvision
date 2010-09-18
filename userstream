@@ -63,8 +63,10 @@ sub receive_event {
     say "\n-> GOT SOME OTHER EVENT";
     
     if ( $event->{'event'} eq 'favorite' ) {
-        ## TODO -- deal with favouriting events
-        say "-> SOMEONE FAVOURITED A TWEET";
+        my $favouriter = $event->{'source'}{'id'};
+        my $tweet_id   = $event->{'target_object'}{'id'};
+        
+        $filter->mark_tweet_as_favourited( $tweet_id, $favouriter );
     }
     else {
         use Data::Dumper::Concise;

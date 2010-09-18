@@ -233,6 +233,15 @@ method load_tweet ( Str $id ) {
 method delete_tweet ( Str $id ) {
     $self->delete_document( $id );
 }
+method mark_tweet_as_favourited ( Str $id, Str $favouriter ) {
+    my $db  = $self->get_database();
+    my $doc = $db->get_doc( $id );
+    my %doc = %$doc;
+    
+    push @{ $doc{'favourited_by'} }, $favouriter;
+    
+    $self->update_document( $id, \%doc );
+}
 
 method tweet_as_text ( HashRef $tweet, $meta = '' ) {
     my( $screen, $name ) = $self->screen_name_from_tweet( $tweet );
