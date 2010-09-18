@@ -228,7 +228,7 @@ method tweet_as_text ( HashRef $tweet, $meta = '' ) {
     my( $screen, $name ) = $self->screen_name_from_tweet( $tweet );
     
     my $timestamp = $tweet->{'created'} // 0;
-    my $time      = strftime '%R', gmtime( $timestamp );
+    my $time      = strftime '%R', localtime( $timestamp );
     
     if ( $meta ) {
         my $score   = $tweet->{'score'}   // 0;
@@ -279,9 +279,9 @@ method tweet_as_html ( HashRef $tweet, $meta = '', $include_replies=1 ) {
 <li>
   <div>
       <span class='when'>${time}</span>
-      <a href='http://twitter.com/${screen}'>
+      <em><a href='http://twitter.com/${screen}'>
           <img src='${avatar}' width='48' height='48' alt=''>
-          $name <span class='screen'>\@${screen}</span>
+          $name <span class='screen'>\@${screen}</span></em>
       </a>
       <span class='tweet'>${text}</span>
   </div>

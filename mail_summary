@@ -47,79 +47,86 @@ if ( $count ) {
 <head>
   <style>
   body {
-      font-family: Helvetica,sans-serif;
-      background: #fff;
-      padding: 0;
-      margin: 0;
-      font-size: 18px;
-      width: 360px;
+      font-family:          Helvetica,sans-serif;
+      background:           #fff;
+      padding:              0;
+      margin:               10px;
+      font-size:            18px;
+      width:                400px;
+      min-height:           280px;
   }
   ul,li {
-      margin: 0;
-      padding: 0;
-      list-style: none;
+      margin:               0;
+      padding:              0;
+      list-style:           none;
   }
   li {
-      border-bottom: 1px solid #999;
-      color: #444;
-      padding-left: 50px;
-      line-height: 1.5;
+      border-bottom:        1px solid #999;
+      color:                #444;
+      padding-left:         50px;
+      line-height:          1.5;
   }
   li div {
-      padding-bottom: 5px;
+      padding-bottom:       5px;
   }
   li span.screen {
-      color: #999;
-      font-size: 80%;
+      color:                #999;
+      font-size:            80%;
+  }
+  li em {
+      font-family:          Georgia,Times,serif;
+      display:              block;
+      font-style:           normal;
+  }
+  li em a {
+      font-weight:          bold;
+      color:                black;
   }
   li a {
-      font-weight: bold;
-      font-family: Georgia,Times,serif;
-      display: block;
-      text-decoration: none;
-      color: #000;
+      color:                #400080;
+      text-decoration:      none;
   }
   li span.when {
-      color: #98b;
-      font-family: Georgia,Times,serif;
-      font-size: 50%;
-      float: right;
-      padding-top: 2px;
-      white-space: nowrap;
+      color:                #98b;
+      font-family:          Georgia,Times,serif;
+      font-size:            50%;
+      float:                right;
+      padding-top:          2px;
+      white-space:          nowrap;
   }
   li img {
-      float: left;
-      margin-left: -50px;
-      margin-top: 4px;
-      border: 1px solid transparent;
+      float:                left;
+      margin-left:          -50px;
+      margin-top:           4px;
+      border:               1px solid transparent;
       -webkit-border-radius: 8px;
-      width: 40px;
-      height: 40px;
+      width:                40px;
+      height:               40px;
   }
   li li {
-      background: transparent;
-      padding-left: 0;
-      font-size: 80%;
-      border-bottom: 1px dotted #fff;
-      min-height: 29px;
-      color: #666;
+      background:           transparent;
+      padding-left:         0;
+      font-size:            80%;
+      border-bottom:        1px dotted #fff;
+      min-height:           29px;
+      color:                #666;
   }
   li li a {
-      color: #666;
+      color:                #666;
   }
   li li:last-child {
-      border: none;
+      border:               none;
   }
   li li div {
-      min-height: 29px;
+      min-height:           29px;
   }
   li li span.when {
-      font-size: 80%;
+      font-size:            80%;
   }
   li li img {
-      width: 20px;
-      height: 20px;
-      margin-left: -32px;
+      width:                20px;
+      height:               20px;
+      margin-left:          -32px;
   }
   </style>
 </head>
