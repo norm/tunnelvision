@@ -214,7 +214,14 @@ method save_tweet ( HashRef $tweet ) {
     my $stamp   = UnixDate( $created, '%s' );
     $body->{'created'} = $stamp;
     
-    $self->update_if_changed( $id, $body );
+    if ( defined $id ) {
+        $self->update_if_changed( $id, $body );
+    }
+    else {
+        say "\nSAVE TWEET CALLED WITH INVALID CONTENT:";
+        use Data::Dumper::Concise;
+        print Dumper $tweet;
+    }
 }
 method load_tweet ( Str $id ) {
     my $db = $self->get_database();
