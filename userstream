@@ -60,7 +60,6 @@ sub receive_friends_list {
 }
 sub receive_event {
     my $event = shift;
-    say "\n-> GOT SOME OTHER EVENT";
     
     if ( $event->{'event'} eq 'favorite' ) {
         my $favouriter = $event->{'source'}{'id'};
@@ -68,7 +67,16 @@ sub receive_event {
         
         $filter->mark_tweet_as_favourited( $tweet_id, $favouriter );
     }
+    elsif ( $event->{'event'} eq 'list_member_added' ) {
+        # say "\n-> ADDED A USER TO A LIST";
+        print "%";
+    }
+    elsif ( $event->{'event'} eq 'follow' ) {
+        # say "\n-> STARTED FOLLOWING SOMEONE";
+        print "+";
+    }
     else {
+        say "\n-> GOT SOME OTHER EVENT";
         use Data::Dumper::Concise;
         print Dumper $event;
     }
