@@ -230,6 +230,9 @@ method load_tweet ( Str $id ) {
     my %doc = %$doc;
     return \%doc;
 }
+method delete_tweet ( Str $id ) {
+    $self->delete_document( $id );
+}
 
 method tweet_as_text ( HashRef $tweet, $meta = '' ) {
     my( $screen, $name ) = $self->screen_name_from_tweet( $tweet );
@@ -482,6 +485,12 @@ method get_access_tokens ( Int $pin! ) {
     return $twitter->request_access_token( verifier => $pin );
 }
 
+method delete_document ( Str $id! ) {
+    my $db  = $self->get_database();
+    my $doc = $db->get_doc( $id );
+    
+    $db->delete_doc( $id, $doc->{'_rev'} );
+}
 method update_document ( Str $id!, HashRef $state ) {
     my $db = $self->get_database();
     

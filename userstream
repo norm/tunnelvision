@@ -44,21 +44,15 @@ exit;
 sub receive_tweet {
     my $tweet = shift;
     
-    # protect against rogue events
+    # deleted tweet
     if ( defined $tweet->{'delete'}{'status'} ) {
-        say "\n-> SOMEONE DELETED A TWEET";
-        use Data::Dumper::Concise;
-        print Dumper \$tweet;
-        return;
+        $filter->delete_tweet( $tweet->{'delete'}{'status'}{'id'} );
+        print 'X';
     }
-    
-    print ".";
-    # use Data::Dumper::Concise;
-    # print Dumper $tweet;
-    
-    # print $filter->tweet_as_text( $tweet );
-    
-    $filter->save_tweet( $tweet );
+    else {
+        $filter->save_tweet( $tweet );
+        print '.';
+    }
 }
 sub receive_friends_list {
     my $list = shift;
