@@ -392,10 +392,9 @@ method get_twitter_lists {
         
         foreach my $list ( @{ $get_lists->{'lists'} } ) {
             my $slug    = $list->{'slug'};
-            my $members = $twitter->list_members( $user, $list->{'id'} );
-            
-            foreach my $member ( @{ $members->{'users'} } ) {
-                push @{ $lists{ $slug } }, $member->{'id'};
+            my $members = $self->get_list_member_ids( $list->{'id'} );
+            foreach my $member ( @{ $members } ) {
+                push @{ $lists{ $slug } }, $member;
             }
         }
         
@@ -404,6 +403,26 @@ method get_twitter_lists {
     }
     
     return %$lists;
+}
+method get_list_member_ids ( $id ) {
+    my $twitter = $self->get_twitter();
+    my $user    = $self->get_config( 'primary_user' );
+    my $cursor  = -1;
+    my @ids;
+    
+    while ( $cursor != 0 ) {
+        my $members = $twitter->list_members({
+                user    => 'cackhanded',
+                list_id => $id,
+                cursor  => $cursor
+            });
+        $cursor = $members->{'next_cursor'};
+        foreach my $member ( @{ $members->{'users'} } ) {
+            push @ids, $member->{'id'};
+        }
+    }
+    
+    return \@ids;
 }
 
 method get_next_unclassified_tweet {
