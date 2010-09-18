@@ -131,7 +131,7 @@ method build_circulators {
 method build_cache {
     return Cache::FastMmap->new(
             share_file     => 'state/shared.cache',
-            expire_time    => '30m',
+            expire_time    => '2h',
             cache_size     => '16m',
             init_file      => 0,
             unlink_on_exit => 0,
